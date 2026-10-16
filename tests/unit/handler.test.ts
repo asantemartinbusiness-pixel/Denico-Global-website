@@ -88,7 +88,7 @@ describe("handleEnquiry", () => {
   });
 
   it("rejects honeypot, too-fast and stale submissions without claiming success", async () => {
-    for (const body of [{ website: "http://spam" }, { startedAt: NOW - 500 }, { startedAt: NOW - 7 * 3600_000 }]) {
+    for (const body of [{ website: "http://spam" }, { startedAt: NOW - 500 }, { startedAt: NOW - 25 * 3600_000 }]) {
       const res = await handleEnquiry(request(body), deps());
       expect(res.status).toBe(400);
       expect(res.body).toMatchObject({ ok: false, error: "rejected" });
@@ -172,6 +172,16 @@ describe("handleEnquiry — security review regressions", () => {
     expect(first.body).toMatchObject({ reference: "DG-TEST-1" });
     expect(other.body).toMatchObject({ ok: true, duplicate: false, reference: "DG-TEST-2" });
     expect(await readdir(outboxDir)).toHaveLength(2);
+  });
+
+  it("SEC-C: in the shared global bucket, identical content from another submission is never matched", async () => {
+    const d = deps();
+    await handleEnquiry(request({}, { clientKey: "global" }), d);
+    const other = await handleEnquiry(
+      request({ idempotencyKey: "eeeeeeee-bbbb-4ccc-8ddd-eeeeeeeeeeee" }, { clientKey: "global" }),
+      d,
+    );
+    expect(other.body).toMatchObject({ ok: true, duplicate: false, reference: "DG-TEST-2" });
   });
 
   it("SEC-D: concurrent identical submissions are delivered once", async () => {

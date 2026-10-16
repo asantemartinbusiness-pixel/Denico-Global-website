@@ -14,13 +14,21 @@ async function fill(page: Page, message: string, type = "Group and business enqu
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/contact/");
-  // The server rejects submissions completed faster than a human could.
-  await page.waitForTimeout(2600);
+});
+
+test("QA-02: a very fast genuine submission is held briefly and accepted, not rejected", async ({ page }) => {
+  await fill(page, uniqueMessage("fast"));
+  await page.getByRole("button", { name: "Send enquiry" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Enquiry recorded in test mode" })).toBeVisible();
+});
+
+test("QA-01: without hydration the form cannot submit, and it would never use GET", async ({ page }) => {
+  await expect(page.locator("#enquiry-form")).toHaveAttribute("method", "post");
 });
 
 test("shows an error summary and inline errors, focused for assistive technology", async ({ page }) => {
   await page.getByRole("button", { name: "Send enquiry" }).click();
-  const summary = page.getByRole("alert").filter({ hasText: "There is a problem" });
+  const summary = page.getByRole("group", { name: "There is a problem with your enquiry" });
   await expect(summary).toBeFocused();
   await expect(summary.getByRole("link")).toHaveCount(4);
   await expect(page.getByLabel("Name")).toHaveAttribute("aria-invalid", "true");
@@ -28,6 +36,10 @@ test("shows an error summary and inline errors, focused for assistive technology
 
   await summary.getByRole("link", { name: "Enter your email address." }).click();
   await expect(page.getByLabel("Email address")).toBeFocused();
+  // The label and error, not just the input, are visible below the sticky header.
+  const headerBottom = await page.locator("header").first().evaluate((el) => el.getBoundingClientRect().bottom);
+  const labelTop = await page.getByText("Email address", { exact: true }).evaluate((el) => el.getBoundingClientRect().top);
+  expect(labelTop).toBeGreaterThanOrEqual(headerBottom);
 
   await page.getByLabel("Email address").fill("bad-address");
   await expect(page.getByText("Enter an email address in the format name@example.com.").first()).toBeVisible();
@@ -53,6 +65,8 @@ test("Journey C — business enquiry: complete form → test-mode delivery → t
 
   await page.getByRole("button", { name: "Send another enquiry" }).click();
   await expect(page.getByLabel("Name")).toHaveValue("");
+  // QA-03: the chosen enquiry type is kept for a follow-up.
+  await expect(page.getByRole("radio", { name: "Group and business enquiry" })).toBeChecked();
 });
 
 test("double-clicking submit sends a single request", async ({ page }) => {
@@ -72,7 +86,7 @@ test("network failure shows an honest error with the email fallback", async ({ p
   await fill(page, uniqueMessage("network"), "Press and media");
   await page.route("**/api/enquiry/", (route) => route.abort("internetdisconnected"));
   await page.getByRole("button", { name: "Send enquiry" }).click();
-  const alert = page.getByRole("alert").filter({ hasText: "has not been sent" });
+  const alert = page.getByRole("group", { name: "Your enquiry has not been sent" });
   await expect(alert).toBeFocused();
   await expect(alert).toContainText("could not reach the server");
   await expect(alert.getByRole("link", { name: "press@denicoglobal.com" })).toHaveAttribute(
@@ -97,7 +111,7 @@ test("unconfigured delivery (503) is reported, never shown as success", async ({
     }),
   );
   await page.getByRole("button", { name: "Send enquiry" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "has not been sent" })).toContainText(
+  await expect(page.getByRole("group", { name: "Your enquiry has not been sent" })).toContainText(
     "not available at the moment",
   );
   await expect(page.getByText("Enquiry recorded")).toHaveCount(0);

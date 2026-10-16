@@ -23,12 +23,13 @@ test.describe("homepage slider", () => {
     await expect(carousel.getByRole("button", { name: /Slide 1:/ })).toHaveAttribute("aria-current", "true");
   });
 
-  test("arrow keys move between slides from the slide picker", async ({ page }) => {
+  test("arrow keys move between slides from the slide picker, and focus follows", async ({ page }) => {
     await page.goto("/");
     const carousel = page.getByRole("region", { name: "Denico Global introduction" });
     await carousel.getByRole("button", { name: /Slide 1:/ }).focus();
     await page.keyboard.press("ArrowRight");
     await expect(carousel.locator('[data-active="true"]')).toHaveAttribute("aria-label", /^2 of 3/);
+    await expect(carousel.getByRole("button", { name: /Slide 2:/ })).toBeFocused();
     await page.keyboard.press("ArrowLeft");
     await page.keyboard.press("ArrowLeft");
     await expect(carousel.locator('[data-active="true"]')).toHaveAttribute("aria-label", /^3 of 3/);
@@ -64,6 +65,23 @@ test.describe("homepage slider", () => {
     await expect(carousel.getByRole("button", { name: "Play slideshow" })).toBeVisible();
     await page.waitForTimeout(7600);
     await expect(carousel.locator('[data-active="true"]')).toHaveAttribute("aria-label", /^2 of 3/);
+    await context.close();
+  });
+
+  test("keyboard focus stops rotation until Play is pressed (APG)", async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: "no-preference" });
+    const page = await context.newPage();
+    await page.goto(test.info().project.use.baseURL + "/");
+    const carousel = page.getByRole("region", { name: "Denico Global introduction" });
+    await expect(carousel.getByRole("button", { name: "Pause slideshow" })).toBeVisible();
+    // Tab from the skip link and header into the carousel; the rotation control comes first.
+    await carousel.getByRole("button", { name: "Pause slideshow" }).focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expect(carousel.getByRole("button", { name: "Play slideshow" })).toBeVisible();
+    await page.keyboard.press("Shift+Tab"); // leave the carousel
+    await page.waitForTimeout(7600);
+    await expect(carousel.locator('[data-active="true"]')).toHaveAttribute("aria-label", /^1 of 3/);
     await context.close();
   });
 });

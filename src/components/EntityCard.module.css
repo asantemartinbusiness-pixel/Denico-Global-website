@@ -1,4 +1,6 @@
 .card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: grid;
   gap: var(--space-5);
   align-content: start;

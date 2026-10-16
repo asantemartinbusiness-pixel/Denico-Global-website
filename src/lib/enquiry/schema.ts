@@ -21,8 +21,8 @@ export const LIMITS = {
 
 /** Minimum time between form render and submission, a light bot check. */
 export const MIN_FILL_TIME_MS = 2500;
-/** Submissions older than this are treated as stale and must be resent. */
-export const MAX_FORM_AGE_MS = 1000 * 60 * 60 * 6;
+/** Submissions older than this are stale. Over 20 hours, per the WCAG 2.2.1 exception. */
+export const MAX_FORM_AGE_MS = 1000 * 60 * 60 * 24;
 
 /**
  * Bidirectional overrides/isolates and zero-width spaces, which can disguise

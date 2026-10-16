@@ -30,7 +30,9 @@ test.describe("mobile navigation", () => {
 
     const menu = page.getByRole("navigation", { name: "Mobile" });
     await expect(menu).toBeVisible();
-    await expect(page.getByRole("button", { name: "Close" })).toHaveAttribute("aria-expanded", "true");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    // Content behind the full-screen panel is inert while the menu is open.
+    await expect(page.locator("main")).toHaveAttribute("inert", "");
     await expect(menu.getByRole("link", { name: "Home" })).toBeFocused();
 
     // Tab cycles within the toggle and menu links.
@@ -40,7 +42,26 @@ test.describe("mobile navigation", () => {
 
     await page.keyboard.press("Escape");
     await expect(menu).toBeHidden();
-    await expect(page.getByRole("button", { name: "Menu" })).toBeFocused();
+    await expect(toggle).toBeFocused();
+    await expect(page.locator("main")).not.toHaveAttribute("inert", /.*/);
+  });
+
+  test("activating the current page link closes the menu and returns focus to the toggle", async ({ page }) => {
+    await page.goto("/");
+    const toggle = page.getByRole("button", { name: "Menu" });
+    await toggle.click();
+    await page.getByRole("navigation", { name: "Mobile" }).getByRole("link", { name: "Home" }).click();
+    await expect(page.getByRole("navigation", { name: "Mobile" })).toBeHidden();
+    await expect(toggle).toBeFocused();
+  });
+
+  test("widening the viewport with the menu open moves focus to the desktop navigation", async ({ page }) => {
+    await page.goto("/contact/");
+    await page.getByRole("button", { name: "Menu" }).click();
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await expect(
+      page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Contact" }),
+    ).toBeFocused();
   });
 
   test("Journey E — mobile: Home → menu → Portfolio → Contact", async ({ page }) => {

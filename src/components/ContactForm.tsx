@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import {
   ENQUIRY_TYPE_LABELS,
   ENQUIRY_TYPES,
   enquirySchema,
   fieldErrors as toFieldErrors,
   LIMITS,
+  MIN_FILL_TIME_MS,
   type EnquiryFieldErrors,
   type EnquiryType,
 } from "@/lib/enquiry/schema";
@@ -42,9 +43,12 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
   const formId = useId();
   const [values, setValues] = useState<Values>({ name: "", email: "", enquiryType: "", message: "" });
   const [errors, setErrors] = useState<EnquiryFieldErrors>({});
+  // The summary reflects the last submit attempt only, so it is not rebuilt on every keystroke.
+  const [summary, setSummary] = useState<EnquiryFieldErrors>({});
   const [attempted, setAttempted] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [honeypot, setHoneypot] = useState("");
+  const [hydrated, setHydrated] = useState(false);
   const startedAt = useRef(0);
   const idempotencyKey = useRef("");
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -55,7 +59,8 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
     startedAt.current = Date.now();
     idempotencyKey.current = newKey();
     const requested = new URLSearchParams(window.location.search).get("enquiry");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- preselect from the URL once on mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- browser-only setup once on mount
+    setHydrated(true);
     if (isEnquiryType(requested)) setValues((v) => ({ ...v, enquiryType: requested }));
   }, []);
 
@@ -81,6 +86,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
 
     const found = validate(values);
     setErrors(found);
+    setSummary(found);
     if (Object.keys(found).length > 0) {
       setStatus({ kind: "idle" });
       requestAnimationFrame(() => summaryRef.current?.focus());
@@ -90,6 +96,11 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
     submitting.current = true;
     setStatus({ kind: "submitting" });
     try {
+      // The server rejects forms completed faster than a person could. Fast but
+      // genuine visitors (autofill, paste) wait out the remainder instead.
+      const remaining = startedAt.current + MIN_FILL_TIME_MS + 250 - Date.now();
+      if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+
       const response = await fetch("/api/enquiry/", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -108,6 +119,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
       }
       if (body && body.error === "invalid" && body.fieldErrors) {
         setErrors(body.fieldErrors);
+        setSummary(body.fieldErrors);
         setStatus({ kind: "idle" });
         requestAnimationFrame(() => summaryRef.current?.focus());
         return;
@@ -126,9 +138,22 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
     }
   }
 
+  /** Brings the whole field (label and error, not just the input) below the sticky header. */
+  function jumpToField(event: MouseEvent<HTMLAnchorElement>, key: keyof Values) {
+    const target = document.getElementById(id(key));
+    if (!target) return;
+    event.preventDefault();
+    const wrapper = target.closest("[data-field]") ?? target;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    wrapper.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    target.focus({ preventScroll: true });
+  }
+
   function reset() {
-    setValues({ name: "", email: "", enquiryType: "", message: "" });
+    // Keep the chosen enquiry type: a follow-up is usually for the same team.
+    setValues((v) => ({ name: "", email: "", enquiryType: v.enquiryType, message: "" }));
     setErrors({});
+    setSummary({});
     setAttempted(false);
     startedAt.current = Date.now();
     idempotencyKey.current = newKey();
@@ -136,7 +161,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
   }
 
   const fallbackEmail = fallbackEmails[values.enquiryType || "general"];
-  const errorList = FIELD_ORDER.filter((key) => errors[key]);
+  const errorList = FIELD_ORDER.filter((key) => summary[key]);
   const id = (key: string) => `${formId}-${key}`;
   const busy = status.kind === "submitting";
 
@@ -165,18 +190,38 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
   }
 
   return (
-    <form id="enquiry-form" className={styles.form} noValidate onSubmit={onSubmit} aria-describedby={`${formId}-intro`}>
+    // method="post" keeps personal data out of URLs even if a submission
+    // somehow bypasses the script; the submit button stays disabled until hydrated.
+    <form
+      id="enquiry-form"
+      className={styles.form}
+      method="post"
+      action="/api/enquiry/"
+      noValidate
+      onSubmit={onSubmit}
+      aria-describedby={`${formId}-intro`}
+    >
       <p id={`${formId}-intro`} className={styles.intro}>
         All fields are required.
       </p>
 
       {errorList.length > 0 ? (
-        <div ref={summaryRef} tabIndex={-1} className={`${styles.notice} ${styles.error}`} role="alert">
-          <h3 className={styles.noticeHeading}>There is a problem with your enquiry</h3>
+        <div
+          ref={summaryRef}
+          tabIndex={-1}
+          className={`${styles.notice} ${styles.error}`}
+          aria-labelledby={`${formId}-summary-heading`}
+          role="group"
+        >
+          <h3 id={`${formId}-summary-heading`} className={styles.noticeHeading}>
+            There is a problem with your enquiry
+          </h3>
           <ul>
             {errorList.map((key) => (
               <li key={key}>
-                <a href={`#${id(key)}`}>{errors[key]}</a>
+                <a href={`#${id(key)}`} onClick={(event) => jumpToField(event, key)}>
+                  {summary[key]}
+                </a>
               </li>
             ))}
           </ul>
@@ -184,8 +229,16 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
       ) : null}
 
       {status.kind === "error" ? (
-        <div ref={resultRef} tabIndex={-1} className={`${styles.notice} ${styles.error}`} role="alert">
-          <h3 className={styles.noticeHeading}>Your enquiry has not been sent</h3>
+        <div
+          ref={resultRef}
+          tabIndex={-1}
+          className={`${styles.notice} ${styles.error}`}
+          role="group"
+          aria-labelledby={`${formId}-failure-heading`}
+        >
+          <h3 id={`${formId}-failure-heading`} className={styles.noticeHeading}>
+            Your enquiry has not been sent
+          </h3>
           <p>{status.message}</p>
           <p>
             Email: <a href={`mailto:${fallbackEmail}`}>{fallbackEmail}</a>
@@ -193,7 +246,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
         </div>
       ) : null}
 
-      <div className={styles.field} data-invalid={errors.name ? true : undefined}>
+      <div className={styles.field} data-field data-invalid={errors.name ? true : undefined}>
         <label htmlFor={id("name")}>{FIELD_LABELS.name}</label>
         {errors.name ? (
           <p id={`${id("name")}-error`} className={styles.fieldError}>
@@ -209,13 +262,14 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
           maxLength={LIMITS.name}
           value={values.name}
           onChange={(e) => update("name", e.target.value)}
+          readOnly={busy}
           aria-invalid={errors.name ? true : undefined}
           aria-describedby={errors.name ? `${id("name")}-error` : undefined}
           required
         />
       </div>
 
-      <div className={styles.field} data-invalid={errors.email ? true : undefined}>
+      <div className={styles.field} data-field data-invalid={errors.email ? true : undefined}>
         <label htmlFor={id("email")}>{FIELD_LABELS.email}</label>
         {errors.email ? (
           <p id={`${id("email")}-error`} className={styles.fieldError}>
@@ -233,6 +287,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
           maxLength={LIMITS.email}
           value={values.email}
           onChange={(e) => update("email", e.target.value)}
+          readOnly={busy}
           aria-invalid={errors.email ? true : undefined}
           aria-describedby={errors.email ? `${id("email")}-error` : undefined}
           required
@@ -240,6 +295,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
       </div>
 
       <fieldset
+        data-field
         className={`${styles.field} ${styles.fieldset}`}
         data-invalid={errors.enquiryType ? true : undefined}
         aria-describedby={errors.enquiryType ? `${id("enquiryType")}-error` : undefined}
@@ -261,6 +317,8 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
                 value={type}
                 checked={values.enquiryType === type}
                 onChange={() => update("enquiryType", type)}
+                disabled={busy}
+                aria-describedby={errors.enquiryType ? `${id("enquiryType")}-error` : undefined}
                 required
               />
               <span>{ENQUIRY_TYPE_LABELS[type]}</span>
@@ -269,7 +327,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
         </div>
       </fieldset>
 
-      <div className={styles.field} data-invalid={errors.message ? true : undefined}>
+      <div className={styles.field} data-field data-invalid={errors.message ? true : undefined}>
         <label htmlFor={id("message")}>{FIELD_LABELS.message}</label>
         {errors.message ? (
           <p id={`${id("message")}-error`} className={styles.fieldError}>
@@ -284,6 +342,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
           maxLength={LIMITS.message}
           value={values.message}
           onChange={(e) => update("message", e.target.value)}
+          readOnly={busy}
           aria-invalid={errors.message ? true : undefined}
           aria-describedby={`${id("message")}-count${errors.message ? ` ${id("message")}-error` : ""}`}
           required
@@ -311,7 +370,7 @@ export function ContactForm({ fallbackEmails }: { fallbackEmails: Record<Enquiry
         <Link href="/privacy/">privacy notice</Link>.
       </p>
 
-      <button type="submit" className={styles.submit} disabled={busy} aria-disabled={busy}>
+      <button type="submit" className={styles.submit} disabled={busy || !hydrated}>
         {busy ? "Sending…" : "Send enquiry"}
       </button>
       <p className="visually-hidden" role="status" aria-live="polite">

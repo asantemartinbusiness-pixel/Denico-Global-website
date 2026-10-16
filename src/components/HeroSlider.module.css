@@ -26,7 +26,7 @@
 }
 
 .masthead {
-  padding-top: var(--space-6);
+  padding-top: clamp(1rem, 4svh, 2rem);
 }
 
 .title {
@@ -46,7 +46,7 @@
 .stage {
   display: grid;
   align-items: end;
-  padding-block: var(--space-8) var(--space-7);
+  padding-block: clamp(1.5rem, 7svh, 4rem) clamp(1.25rem, 5svh, 3rem);
 }
 
 .slide {
@@ -98,7 +98,8 @@
 }
 
 .heading {
-  font-size: var(--step-5);
+  /* Scales with viewport height too, so the controls stay above the fold on short laptop screens. */
+  font-size: min(var(--step-5), 9.5svh);
   max-width: 14ch;
 }
 
@@ -133,14 +134,19 @@
 
 .controls {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto auto 1fr;
   grid-template-areas:
-    "counter buttons"
-    "pager pager";
+    "toggle counter buttons"
+    "pager pager pager";
   align-items: center;
   gap: var(--space-4) var(--space-5);
-  padding-block: var(--space-5) var(--space-6);
+  padding-block: clamp(0.75rem, 2.5svh, 1.5rem) clamp(1rem, 3svh, 2rem);
   border-top: 1px solid var(--color-night-hairline);
+}
+
+.toggleSlot {
+  grid-area: toggle;
+  display: flex;
 }
 
 .counter {
@@ -265,8 +271,8 @@
 
 @media (min-width: 48em) {
   .controls {
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: "counter pager buttons";
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-areas: "toggle counter pager buttons";
     gap: var(--space-7);
   }
 

@@ -16,7 +16,7 @@ for (const { path } of [...PAGES, { path: "/missing-page/" }]) {
 test("axe: contact form in its error state", async ({ page }) => {
   await page.goto("/contact/");
   await page.getByRole("button", { name: "Send enquiry" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "There is a problem" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "There is a problem with your enquiry" })).toBeVisible();
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });

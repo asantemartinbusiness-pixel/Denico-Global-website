@@ -45,9 +45,11 @@ On the original Contact page, the general enquiries link **displayed** `info@den
 | Cross-origin `Origin` header | 403 |
 | Non-JSON body | 415 |
 | Body > 16 KB (declared or streamed) | 413 |
-| > N per IP per 10 min (default 5; `ENQUIRY_RATE_LIMIT`) | 429 + `Retry-After` |
+| Rate limit: per client IP (default 5 per 10 min, `ENQUIRY_RATE_LIMIT`) **only** when `ENQUIRY_CLIENT_IP_HEADER` names a platform-set header; otherwise one global bucket (default 30 per 10 min, `ENQUIRY_GLOBAL_RATE_LIMIT`). `X-Forwarded-For` is never trusted. | 429 + `Retry-After` |
 | Honeypot filled / too fast / stale | 400 "could not be accepted", **not** a fake success |
-| Same idempotency key, or same email + type + message within 10 min | 200 with the original reference, `duplicate: true`; delivered once |
+| Same idempotency key + same content, or (per-client mode only) same name + email + type + message from the same client within 10 min | 200 with the original reference, `duplicate: true`; delivered once |
+| Same idempotency key, different content | 409 "already used — reload to send a new enquiry" |
+| Concurrent identical requests | Coalesced into one delivery |
 | Delivery not configured / upstream failure | 503 / 502, with an email fallback in the UI |
 | Network failure (client) | "We could not reach the server…", values kept, mailto fallback |
 | Double click | Client guard + disabled button; one request (tested) |
@@ -57,7 +59,7 @@ Logs record only the status and error code, never submitted personal data.
 ### Production limitations
 
 - The rate limiter and dedupe cache are **process-local**. On serverless or multi-instance hosting, replace them with a shared store (e.g. Redis/Upstash) or put a platform WAF rule in front. Tracked as SEC-04.
-- `X-Forwarded-For` is trusted for the client IP, so deploy only behind a proxy that overwrites it.
+- Set `ENQUIRY_CLIENT_IP_HEADER` to the header your platform guarantees (e.g. `cf-connecting-ip`, `x-vercel-forwarded-for`). Never use a header the client can set.
 - Consider adding Cloudflare Turnstile if spam appears. It is not added now, because it would bring a third-party script and cookie, with consent implications.
 
 ## Integration configuration checklist (before go-live)

@@ -71,7 +71,7 @@ export function createReference(now: number) {
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
-const REJECTED = "Your enquiry could not be accepted. Please reload the page and try again, or email us directly.";
+const REJECTED = "Your enquiry could not be accepted. Please wait a moment and try again, or email us directly.";
 
 function fail(
   status: number,
@@ -143,10 +143,12 @@ export async function handleEnquiry(req: EnquiryRequest, deps: EnquiryDeps): Pro
   const idempotencyKey = envelope.data.idempotencyKey;
 
   // Duplicate handling. Content matches are scoped to the same client so one
-  // visitor can never learn, or suppress, another visitor's enquiry.
-  const contentHash = sha256(`${enquiry.email}\n${enquiry.enquiryType}\n${enquiry.message}`);
+  // visitor can never learn, or suppress, another visitor's enquiry. Without a
+  // per-client key (shared "global" bucket) only the idempotency key is used.
+  const contentHash = sha256(`${enquiry.name}\n${enquiry.email}\n${enquiry.enquiryType}\n${enquiry.message}`);
   const keyId = `id:${idempotencyKey}`;
-  const keyContent = `content:${sha256(req.clientKey)}:${contentHash}`;
+  const keyContent =
+    req.clientKey === "global" ? null : `content:${sha256(req.clientKey)}:${contentHash}`;
 
   const byId = deps.recent.get(keyId, now);
   if (byId) {
@@ -155,13 +157,13 @@ export async function handleEnquiry(req: EnquiryRequest, deps: EnquiryDeps): Pro
     }
     return { status: 200, body: { ok: true, reference: byId.reference, mode: byId.mode, duplicate: true } };
   }
-  const byContent = deps.recent.get(keyContent, now);
+  const byContent = keyContent ? deps.recent.get(keyContent, now) : undefined;
   if (byContent) {
     return { status: 200, body: { ok: true, reference: byContent.reference, mode: byContent.mode, duplicate: true } };
   }
 
   const inFlight = deps.inFlight;
-  const pending = inFlight?.get(keyId) ?? inFlight?.get(keyContent);
+  const pending = inFlight?.get(keyId) ?? (keyContent ? inFlight?.get(keyContent) : undefined);
   if (pending) {
     const settled = await pending;
     return settled.body.ok ? { ...settled, body: { ...settled.body, duplicate: true } } : settled;
@@ -184,16 +186,16 @@ export async function handleEnquiry(req: EnquiryRequest, deps: EnquiryDeps): Pro
     const mode = result.mode === "outbox" ? "test" : "live";
     const entry: RecentEntry = { reference, mode, contentHash };
     deps.recent.set(keyId, entry, now);
-    deps.recent.set(keyContent, entry, now);
+    if (keyContent) deps.recent.set(keyContent, entry, now);
     return { status: 200, body: { ok: true, reference, mode, duplicate: false } };
   })();
 
   inFlight?.set(keyId, work);
-  inFlight?.set(keyContent, work);
+  if (keyContent) inFlight?.set(keyContent, work);
   try {
     return await work;
   } finally {
     inFlight?.delete(keyId);
-    inFlight?.delete(keyContent);
+    if (keyContent) inFlight?.delete(keyContent);
   }
 }

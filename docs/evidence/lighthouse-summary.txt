@@ -1,13 +1,14 @@
-home-mobile            perf:98 acce:100 best:100 seo:66 LCP:2.2 s CLS:0 TBT:100 ms | <0.9: max-potential-fid,unused-javascript,forced-reflow-insight,network-dependency-tree-insight,render-blocking-insight
-home-desktop           perf:100 acce:100 best:100 seo:66 LCP:0.6 s CLS:0 TBT:20 ms | <0.9: unused-javascript,network-dependency-tree-insight,render-blocking-insight
-our-story-mobile       perf:97 acce:100 best:100 seo:66 LCP:1.6 s CLS:0 TBT:180 ms | <0.9: max-potential-fid,unused-javascript,forced-reflow-insight,network-dependency-tree-insight,render-blocking-insight
-our-story-desktop      perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:0 ms | <0.9: unused-javascript,forced-reflow-insight,legacy-javascript-insight,network-dependency-tree-insight,render-blocking-insight
-inside-denico-mobile   perf:94 acce:100 best:100 seo:66 LCP:2.3 s CLS:0 TBT:220 ms | <0.9: total-blocking-time,max-potential-fid,unused-javascript,forced-reflow-insight,legacy-javascript-insight,network-dependency-tree-insight,render-blocking-insight
-inside-denico-desktop  perf:0 acce:100 best:100 seo:66 LCP:undefined CLS:undefined TBT:undefined | <0.9: none
-companies-2-mobile     perf:96 acce:100 best:100 seo:66 LCP:2.3 s CLS:0 TBT:180 ms | <0.9: max-potential-fid,unused-javascript,legacy-javascript-insight,network-dependency-tree-insight,render-blocking-insight
-companies-2-desktop    perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:0 ms | <0.9: unused-javascript,network-dependency-tree-insight,render-blocking-insight
-contact-mobile         perf:98 acce:100 best:100 seo:66 LCP:2.2 s CLS:0 TBT:70 ms | <0.9: max-potential-fid,unused-javascript,forced-reflow-insight,legacy-javascript-insight,network-dependency-tree-insight,render-blocking-insight
-contact-desktop        perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:0 ms | <0.9: unused-javascript,network-dependency-tree-insight,render-blocking-insight
-inside-denico-desktop  perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:0 ms 
-prod-home seo:100 
-prod-contact seo:100 
+home-mobile            perf:98 acce:100 best:100 seo:66 LCP:2.3 s CLS:0 TBT:70 ms FCP:0.9 s bytes:238KiB
+home-desktop           perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:0 ms FCP:0.3 s bytes:277KiB
+our-story-mobile       perf:99 acce:100 best:100 seo:66 LCP:2.2 s CLS:0 TBT:60 ms FCP:0.9 s bytes:221KiB
+our-story-desktop      perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:10 ms FCP:0.2 s bytes:276KiB
+inside-denico-mobile   perf:97 acce:100 best:100 seo:66 LCP:2.4 s CLS:0 TBT:130 ms FCP:0.9 s bytes:221KiB
+inside-denico-desktop  perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:10 ms FCP:0.3 s bytes:276KiB
+companies-2-mobile     perf:97 acce:100 best:100 seo:66 LCP:2.5 s CLS:0 TBT:70 ms FCP:0.9 s bytes:221KiB
+companies-2-desktop    perf:100 acce:100 best:100 seo:66 LCP:0.5 s CLS:0 TBT:0 ms FCP:0.3 s bytes:276KiB
+contact-mobile         perf:95 acce:100 best:100 seo:66 LCP:2.3 s CLS:0 TBT:210 ms FCP:0.9 s bytes:255KiB
+contact-desktop        perf:100 acce:100 best:100 seo:66 LCP:0.6 s CLS:0 TBT:0 ms FCP:0.3 s bytes:276KiB
+
+# Production-indexing build (SITE_ENV=production), SEO category only, earlier run:
+prod-home seo:100
+prod-contact seo:100

@@ -31,13 +31,13 @@ export default function ContactPage() {
           <h2 id="form-heading" className={styles.heading}>
             Web enquiry
           </h2>
-          <ContactForm fallbackEmails={fallbackEmails} />
           <noscript>
             <p className={styles.noscript}>
-              The enquiry form needs JavaScript. Please email{" "}
-              <a href="mailto:info@denicoglobal.com">info@denicoglobal.com</a> instead.
+              The online form needs JavaScript, which is turned off in your browser. Please email the
+              relevant address listed on this page instead.
             </p>
           </noscript>
+          <ContactForm fallbackEmails={fallbackEmails} />
         </section>
 
         <aside className={styles.directory} aria-labelledby="directory-heading">

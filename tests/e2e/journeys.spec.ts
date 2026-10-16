@@ -36,7 +36,7 @@ test("Journey B — portfolio visitor: Home → Portfolio → Denico Studios →
 
   const card = page.getByRole("article", { name: "Denico Studios" });
   await expect(card).toBeVisible();
-  await expect(card.getByText("Operating company of Denico Global")).toBeVisible();
+  await expect(card.getByText("Operating company of Denico Global", { exact: true })).toBeVisible();
   await expect(card.getByRole("link", { name: "studio@denicoglobal.com" })).toHaveAttribute(
     "href",
     "mailto:studio@denicoglobal.com",

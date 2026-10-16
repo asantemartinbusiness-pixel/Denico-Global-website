@@ -1,7 +1,7 @@
 .wordmark {
   display: inline-flex;
   align-items: baseline;
-  column-gap: 0.15em;
+  column-gap: 0.4em;
   color: var(--color-ink);
   line-height: 1;
   white-space: nowrap;

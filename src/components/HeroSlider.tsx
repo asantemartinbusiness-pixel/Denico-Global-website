@@ -24,7 +24,6 @@ export function HeroSlider({
   // null until mounted: autoplay is decided on the client from user preference.
   const [playing, setPlaying] = useState<boolean | null>(null);
   const [hovered, setHovered] = useState(false);
-  const [focusWithin, setFocusWithin] = useState(false);
   const pointerStart = useRef<number | null>(null);
   const count = slides.length;
 
@@ -37,7 +36,7 @@ export function HeroSlider({
     setPlaying(!query.matches);
   }, []);
 
-  const running = playing === true && !hovered && !focusWithin && count > 1;
+  const running = playing === true && !hovered && count > 1;
 
   useEffect(() => {
     if (!running) return;
@@ -45,14 +44,15 @@ export function HeroSlider({
     return () => window.clearTimeout(timer);
   }, [running, active, go]);
 
+  const pagerRef = useRef<HTMLDivElement>(null);
+
+  /** Arrow keys move between slide pickers, keeping focus on the current one. */
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      go(active + 1);
-    } else if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      go(active - 1);
-    }
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const next = (active + (event.key === "ArrowRight" ? 1 : -1) + count) % count;
+    go(next);
+    pagerRef.current?.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
   }
 
   function onPointerDown(event: PointerEvent<HTMLElement>) {
@@ -76,9 +76,9 @@ export function HeroSlider({
       aria-label={label}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onFocus={() => setFocusWithin(true)}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusWithin(false);
+      // Keyboard focus inside the carousel stops rotation until the visitor presses Play (APG).
+      onFocus={(event) => {
+        if (playing && event.target instanceof HTMLElement && event.target.matches(":focus-visible")) setPlaying(false);
       }}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
@@ -128,12 +128,23 @@ export function HeroSlider({
       </div>
 
       <div className={`container ${styles.controls}`}>
+        <div className={styles.toggleSlot}>
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={() => setPlaying((value) => !value)}
+            aria-label={playing ? "Pause slideshow" : "Play slideshow"}
+            disabled={playing === null}
+          >
+            <span aria-hidden="true" className={playing ? styles.pauseIcon : styles.playIcon} />
+          </button>
+        </div>
         <p className={styles.counter} aria-hidden="true">
           <span>{String(active + 1).padStart(2, "0")}</span>
           <span className={styles.counterTotal}> / {String(count).padStart(2, "0")}</span>
         </p>
 
-        <div className={styles.pager} role="group" aria-label="Choose slide" onKeyDown={onKeyDown}>
+        <div ref={pagerRef} className={styles.pager} role="group" aria-label="Choose slide" onKeyDown={onKeyDown}>
           {slides.map((slide, index) => (
             <button
               key={slide.id}
@@ -162,15 +173,6 @@ export function HeroSlider({
           </button>
           <button type="button" className={styles.iconButton} onClick={() => go(active + 1)} aria-label="Next slide">
             <span aria-hidden="true">→</span>
-          </button>
-          <button
-            type="button"
-            className={styles.iconButton}
-            onClick={() => setPlaying((value) => !value)}
-            aria-label={playing ? "Pause slideshow" : "Play slideshow"}
-            disabled={playing === null}
-          >
-            <span aria-hidden="true" className={playing ? styles.pauseIcon : styles.playIcon} />
           </button>
         </div>
       </div>

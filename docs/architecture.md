@@ -47,10 +47,12 @@ ContactForm (client)
        handler.ts (pure, unit-tested):
          same-origin check → 403
          JSON content type → 415
-         rate limit per hashed IP (default 5 / 10 min) → 429 + Retry-After
+         origin = Host/site host; Sec-Fetch-Site same-origin → 403
+         rate limit: trusted platform IP header, else global bucket → 429
          envelope: honeypot empty, 2.5 s ≤ age ≤ 6 h → 400 rejected
          schema validation + normalisation → 400 with fieldErrors
-         dedupe by idempotency key and content hash (10 min) → 200 duplicate
+         dedupe: idempotency key (409 if reused with new content), per-client
+           content hash, in-flight coalescing → 200 duplicate
          deliver(): outbox | webhook | disabled
            not configured → 503   upstream failure → 502
        → 200 {reference, mode: "test" | "live"}
