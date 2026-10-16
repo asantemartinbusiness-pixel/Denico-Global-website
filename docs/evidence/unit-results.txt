@@ -1,0 +1,9 @@
+
+ RUN  v5.0.5 /home/user/Denico-Global-website
+
+
+ Test Files  3 passed (3)
+      Tests  31 passed (31)
+   Start at  16:41:38
+   Duration  633ms (import 45%, tests 39%, transform 13%, worker 3%)
+

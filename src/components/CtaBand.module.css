@@ -1,0 +1,29 @@
+.band {
+  background: var(--color-night-raised);
+  color: var(--color-night-text);
+  padding-block: var(--section-space);
+}
+
+.inner {
+  display: grid;
+  gap: var(--space-6);
+  align-items: end;
+}
+
+.heading {
+  font-size: var(--step-4);
+  max-width: 18ch;
+}
+
+.body {
+  margin-top: var(--space-4);
+  color: var(--color-night-muted);
+  font-size: var(--step-1);
+  max-width: 36rem;
+}
+
+@media (min-width: 56em) {
+  .inner {
+    grid-template-columns: 1fr auto;
+  }
+}

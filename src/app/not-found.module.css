@@ -1,0 +1,23 @@
+.wrap {
+  display: grid;
+  gap: var(--space-5);
+  padding-block: clamp(4rem, 2rem + 8vw, 10rem);
+}
+
+.title {
+  font-size: var(--step-4);
+  max-width: 18ch;
+}
+
+.body {
+  max-width: 36rem;
+  font-size: var(--step-1);
+  color: var(--color-ink-soft);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}

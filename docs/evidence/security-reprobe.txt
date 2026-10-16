@@ -1,0 +1,11 @@
+Security re-probe against the rebuilt production server (localhost:3000), 16 Oct 2026.
+Server config: ENQUIRY_DELIVERY_MODE=outbox; rate limits at defaults (no ENQUIRY_CLIENT_IP_HEADER → global bucket, 30 / 10 min).
+
+SEC-E Origin evil + X-Forwarded-Host evil | 403 | expect 403
+SEC-E application/json-evil | 415 | expect 415
+SEC-E Sec-Fetch-Site cross-site | 403 | expect 403
+SEC-F honeypot omitted | 400 | expect 400
+SEC-C id reuse, new content | 409 | expect 409
+SEC-C same content, other submission: leaks first ref? | no leak | expect no leak
+SEC-D 5 concurrent identical → distinct refs | 1 | expect 1
+SEC-A rotating X-Forwarded-For: blocked at request # | 21 | expect ≤ 30 (global bucket; 9 earlier probe requests counted)
