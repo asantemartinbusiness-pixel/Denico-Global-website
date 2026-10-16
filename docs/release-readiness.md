@@ -48,6 +48,19 @@ The application is complete, tested and ready for **executive review**. It is **
 | Privacy notice | Legal |
 | Deployment, delivery integration, monitoring | Engineering (after approval) |
 
+## Hosting (Vercel)
+
+| Setting | Value |
+|---|---|
+| Vercel project | `denico-global-website` (team "asantemartinbusiness-pixel's projects") |
+| Git link | `asantemartinbusiness-pixel/Denico-Global-website` |
+| Production branch | `main`. Production deploys only when the PR is merged. |
+| Previews | Every push to a non-`main` branch builds a preview URL |
+| Environment | `ENQUIRY_CLIENT_IP_HEADER=x-vercel-forwarded-for` (production + preview). Nothing else is set, so indexing is **off** (`SITE_ENV` unset) and the enquiry form is **disabled** (shows email addresses instead) until OD-03/OD-12 are resolved. |
+| Custom domain | **None attached.** denicoglobal.com is not connected; DNS is untouched (OD-13). |
+
+Before the domain goes live: set `SITE_ENV=production` for the Production environment only, `NEXT_PUBLIC_SITE_URL`, the webhook variables (as Sensitive), and a shared rate-limit store (SEC-04).
+
 ## Change control
 
-Nothing has been deployed, no DNS has been touched, no real enquiries have been sent, and the original WordPress site has not been accessed or modified. The code is on branch `claude/confident-newton-8bk2e4` for review; merging and deployment need explicit approval.
+A Vercel preview of the PR branch has been deployed at the founder's request. No custom domain is attached, no DNS has been touched, no real enquiries have been sent, and the original WordPress site has not been accessed or modified. Merging to `main` publishes to the Vercel production URL (`*.vercel.app`, still noindex), and needs explicit approval.
