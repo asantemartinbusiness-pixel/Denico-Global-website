@@ -1,0 +1,21 @@
+.tag {
+  margin-block: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid currentColor;
+  background: #fffbe6;
+  color: #5c4a00;
+  font-family: var(--font-sans);
+  font-size: var(--step--2);
+  line-height: 1.5;
+  max-width: 60rem;
+}
+
+.observed {
+  background: #eaf3ed;
+  color: #1f5b3a;
+}
+
+.registry {
+  background: #e9f0f8;
+  color: #1b4f8a;
+}

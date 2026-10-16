@@ -1,0 +1,23 @@
+.body {
+  display: grid;
+  gap: var(--space-4);
+  max-width: calc(var(--container-text) + var(--gutter) * 2);
+  margin-inline: 0;
+  padding-block: var(--section-space);
+  font-size: var(--step-0);
+}
+
+.body h2 {
+  margin-top: var(--space-5);
+  font-size: var(--step-2);
+}
+
+.body a {
+  font-weight: 600;
+}
+
+.draft {
+  padding: var(--space-5);
+  border-left: 4px solid #8a6d00;
+  background: #fff8db;
+}
